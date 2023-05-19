@@ -15,7 +15,7 @@ from rest_framework import status
 import random
 from rest_framework.filters import SearchFilter
 
-
+# kkeojyeo
 
 
 # from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -32,8 +32,6 @@ from rest_framework.filters import SearchFilter
 #         user
 #     }
 #     return Response(data)
-
-
 
 
 # FAST2SMS API To Send OTP Code
@@ -59,7 +57,7 @@ class RegisterUser(APIView):
             if models.Users.objects.filter(phone=request.data['phone']):
                 return Response({
                     'status':400,
-                    'errors':'user already existswih this number try loging in'
+                    'errors':'user already exists with this number try loging in'
                 })
             serializer = user_serializer.UserSerializer(data=request.data)
             if not serializer.is_valid():
@@ -68,7 +66,7 @@ class RegisterUser(APIView):
             otp = serializer.data['otp']
             phone = serializer.data['phone']
             device_id = serializer.data['device_id']
-            # sendsms(otp,phone,device_id)
+            sendsms(otp,phone,device_id)
             print("OTP to Verify Your Number is : ",
                   otp, " -----> sent to : ", phone)
             return Response({
@@ -78,7 +76,6 @@ class RegisterUser(APIView):
             })
     except Exception as e:
         raise ValidationError('somthing went wrong')
-
 
 # Resend OTP For User
 class ResendOTP(APIView):
@@ -122,7 +119,6 @@ class VerifyOtp(APIView):
     except Exception as e:
         raise ValidationError('something went wrong')
 
-
 # Login API For End user
 class Login(APIView):
     def post(self,request):
@@ -159,9 +155,8 @@ class UserProfile(APIView):
             return Response({
                 'status':400,
                 'error':'some error occurred',
-                'message':'some error occurred'
+                'message':'No User Found'
             })
-
 
 # Edit User Profile
 class EditUserProfile(APIView):
@@ -184,9 +179,7 @@ class EditUserProfile(APIView):
             "message":"Something Went Wrong"
             })
 
-
 # ################################################################   Pagination     ########################################################################################
-
 class CustomPageNumberPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -230,6 +223,7 @@ class ParticularCategoriesSubCategoriesList(APIView):
             'message': 'success'
         })
 
+# API View For Fetching all Sub Categories
 class AllSubCategories(generics.ListAPIView):
     queryset = models.SubCategories.objects.all()
     serializer_class = admin_serializers.SubCategoryTableSerializer
@@ -420,18 +414,20 @@ class AddItemToCart(APIView):
                     'data':cart_serializer.data,
                     'message':'Item added To Cart'
                 })
+        
 
 # Particular Cart Details
 class GetParticularCartDetails(APIView):
     def post(self,request):
         cart = models.Cart.objects.filter(user = request.data['user'],product=request.data['product'])
-        cart_serializer = user_serializer.CartSerializer(cart,many=True)
+        cart_serializer = user_serializer.CartDetailedSerializer(cart,many=True)
         return Response({
             'status':200,
             'errors':cart_serializer.data,
             'message':'Cart Details Fetched Succesfully'
         })
 
+# Particular Users Cart
 class UsersCartDetails(APIView):
     def post(self,request):
         cart_items = models.Cart.objects.filter(user=request.data['user'])
@@ -537,10 +533,10 @@ class ChatWithus(APIView):
 
 
 
-
-# Search Product
+# ###################################################################  Search Product  ##########################################################################
 from django.db.models import Q
 
+# Global Search for products which can retrieve products even when the keyword is matched in the description
 class SearchProduct(APIView):
     def post(self, request, *args, **kwargs):
         query = request.data.get('query', '') # get the search query from the request data
@@ -555,12 +551,18 @@ class SearchProduct(APIView):
                 'message':'products fetched'
             })
         else:
+            query = "!!!----"
+            queryset = models.Product.objects.filter(
+                Q(description__icontains=query) | Q(product_title__icontains=query)
+            )
+            serializer = admin_serializers.ProductComplteDetailsSerializer(queryset, many=True)
             return Response({
-                'status':400,
-                'error': 'Please provide a search query.'
-                })
+                'status':200,
+                'data':serializer.data,
+                'message':'products fetched'
+            })
 
-       
+
 #############################################################   User Reviews   #####################################################################
 # Post A Review
 class PostReview(APIView):
@@ -609,13 +611,6 @@ class DeleteReview(APIView):
                 'message': 'Review With This Already Deleted'
             })
 
-
-
-
-
-
-
-
 #############################################################   Coupons   #####################################################################
 # Fetch All Coupons With Token
 class GetCoupons(APIView):
@@ -640,6 +635,110 @@ class ParticularCouponDetails(APIView):
             'data': serializer.data,
             'message': 'success'
         })
+
+#############################################################   Orders   #####################################################################
+# Placing An Order By End User
+class CreateOrders(APIView):
+    # authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        order_serializer = user_serializer.OrdersSerializer(data= request.data)
+        if not order_serializer.is_valid():
+            return Response({
+                'status': 403,
+                'errors': order_serializer.errors,
+                'message': 'Some Error Occurred'
+            })
+        else:
+            order_serializer.save()
+            
+            return Response({
+                'status': 200,
+                'data': order_serializer.data,
+                'message': 'Order Placed Succesfully'
+            })
+
+# Order Details
+class OrderDetails(APIView):
+    # authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        order_details = models.OrderModel.objects.filter(id = request.data['order_id'])
+        order_details_serializer = user_serializer.OrdersSerializer(order_details,many=True)
+        return Response({
+            'status': 200,
+            'data': order_details_serializer.data,
+            'message': 'Order Details Fetched Succesfully'
+        })
+    
+
+# Orders History
+class ParticularUserOrdersHistory(APIView):
+    # authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        particular_users_orders = models.OrderModel.objects.filter(user_id = request.data['user'])
+        users_orders_serializer = user_serializer.OrderDetailsWithOrderItems(particular_users_orders,many=True)
+        return Response({
+            'status': 200,
+            'data': users_orders_serializer.data,
+            'message': 'Order History Fetched Succesfully'
+        })
+
+# Adding Order Items to the order
+class AddOrderItems(APIView):
+    def post(self, request):
+        if request.data['quantity'] > models.Product.objects.get(pk=request.data['product']).available_quantity :
+            return Response({
+                "status":400,
+                "bool":False,
+                "message":"Insufficient Products"
+            })
+        order_serializer = user_serializer.OrderItemsSerializer(data=request.data)
+        if not order_serializer.is_valid():
+            return Response({
+                'status': 400,
+                'errors': order_serializer.errors,
+                'message': 'some error occurred'
+            })
+        else:
+            order_serializer.save()
+            product = models.Product.objects.get(pk=request.data['product'])
+            product.no_of_orders = product.no_of_orders + 1
+            return Response({
+                'status': 200,
+                'data': order_serializer.data,
+                'message': 'Order Items Saved Succesfully'
+            })
+
+
+# Empty Users Cart
+class EmptyUsersCart(APIView):
+    def post(self,request):
+        cart = models.Cart.objects.filter(user = request.data['user'])
+        if cart:
+            for c in cart:
+                c.delete()
+            return Response({
+                'status':200,
+                'message':'deleted users cart'
+            })
+        else:
+            return Response({
+                'status':400,
+                'message':'No Items in Users Cart'
+            })
+
+# Mostly Liked
+class TopSellingProducts(APIView):
+    def get(self,request):
+        products = models.Product.objects.all().order_by('no_of_orders').reverse()
+        product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
+        return Response({
+            'status':200,
+            'data':product_serializer.data
+        })
+
+
+
+
 
 
 

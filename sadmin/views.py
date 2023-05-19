@@ -270,7 +270,6 @@ class AllCategory(APIView):
             'message': 'All Categories Fetched'
         })
 
-
 # Custom Pagination Class
 class CustomPageNumberPagination(PageNumberPagination):
     page_size = 10
@@ -289,7 +288,6 @@ class AllCategoryWithPagination(ListAPIView):
     queryset = models.Categories.objects.all()
     serializer_class = admin_serializers.CategorySerializer
     pagination_class = CustomPageNumberPagination
-
 
 # Particular Category Details
 class CategoryDetails(APIView):
@@ -592,17 +590,6 @@ class EditProduct(APIView):
         serializer = admin_serializers.PrpductSerializer(obj,data=request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
-            # images = request.data.getlist('img')
-            # for i in images:
-            #     img_serializer = admin_serializers.ProductImagesSerializer(data={'product': serializer.data['id'], 'image': i})
-            #     if img_serializer.is_valid():
-            #         img_serializer.save()
-            #     else:
-            #         return Response({
-            #             'status': 200,
-            #             'data': img_serializer.errors,
-            #             'message': 'Something went wrong'
-            #         })
             return Response({
                 "status": 200,
                 "data": serializer.data,
@@ -610,6 +597,22 @@ class EditProduct(APIView):
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+# Delete Product API View
+class DeleteProduct(APIView):
+    def delete(self,request,product_id):
+        if models.Product.objects.filter(id=product_id):
+            get_product = models.Product.objects.get(pk=product_id)
+            get_product.delete()
+            return Response({
+                'status':200,
+                'message':'Product Deleted Succesfully'
+            })
+        else:
+            return Response({
+                'status':400,
+                'message':'No Product Found With This ID'
+            })
 
 
 # Edit Sub Category
@@ -693,18 +696,6 @@ class ParticularUserDetails(APIView):
             "message": "Users Details Fetched"
         })
 
-
-
-
-
-
-
-
-
-
-
-
-
 #############################################################   Coupons   #####################################################################
 # Add Coupons View With Token Authentication
 class AddCoupon(APIView):
@@ -739,38 +730,37 @@ class GetCoupons(APIView):
         })
 
 # Get Particular Coupon
-class ParticularCouponDetails(APIView):
-    # authentication_classes = [CustomAuthentication]
-    def get(self,request,coupon_id):
-        coupons = models.Coupons.objects.filter(id=coupon_id)
-        serializer = admin_serializers.CounponsSerializer(coupons,many=True)
-        return Response({
-            'status': 200,
-            'data': serializer.data,
-            'message': 'success'
-        })
+def ParticularCouponDetails(request,coupon_id):
+    my_object = models.Coupons.objects.get(pk=coupon_id)
+    serialized_data = admin_serializers.CounponsSerializer(my_object).data
+    response = Response(serialized_data,content_type='application/json')
+    response.accepted_renderer = JSONRenderer()
+    response.accepted_media_type = 'application/json'
+    response.renderer_context = {
+        'view': ProductDetails,
+        'request': request,
+    }
+    return response
 
-# Edit Coupon Details
+# Edit Coupon
 class EditCouponDetails(APIView):
     # authentication_classes = [CustomAuthentication]
-    def post(self,request,coupon_id):
-        coupons = models.Coupons.objects.get(pk=coupon_id)
-        coupons.coupon_code = request.data['coupon_code']
-        coupons.coupon_description = request.data['coupon_description']
-        coupons.discount_percentage = request.data['discount_percentage']
-        coupons.min_price_for_coupon_avail = request.data['min_price_for_coupon_avail']
-        coupons.max_price = request.data['max_price']
-        coupons.no_of_days_valid = request.data['no_of_days_valid']
-        coupons.no_of_coupons = request.data['no_of_coupons']
-        coupons.universal_coupon = request.data['universal_coupon']
-        coupons.save()
-        edited_coupon = models.Coupons.objects.filter(id=coupon_id)
-        serializer = admin_serializers.CounponsSerializer(edited_coupon,many=True)
-        return Response({
-            'status': 200,
-            'data': serializer.data,
-            'message': 'success'
-        })
+    def put(self, request, coupon_id):
+        try:
+            obj = models.Coupons.objects.get(pk=coupon_id)
+        except models.Coupons.DoesNotExist:
+            return Response({'error': 'Object does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = admin_serializers.CounponsSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": 200,
+                "data": serializer.data,
+                "message": "Coupon  Updated Succesfully"
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 # Delete Coupon
 class DeleteCoupon(APIView):
@@ -791,4 +781,72 @@ class DeleteCoupon(APIView):
                 'bool':False,
                 'message': 'No Coupon Found'
             })
+
+# Analytics
+class MoreInWishlist(APIView):
+    def get(self,request):
+        products = models.Product.objects.all().order_by('no_of_wishlists').reverse()
+        product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
+        return Response({
+            'status':200,
+            'data':product_serializer.data
+        })
+
+
+from userapp import user_serializer
+
+# All Orders
+class AllOrders(APIView):
+    def get(self,request):
+        orders = models.OrderModel.objects.all().reverse()
+        orders_serializer = user_serializer.OrderDetailsWithOrderItems(orders,many=True)
+        return Response({
+            'status':200,
+            'data':orders_serializer.data,
+            'message':'all orders fetched'
+        })
+
+# Particular Order Details
+def ParticularOrderDetails(request,order_id):
+    my_object = models.OrderModel.objects.get(pk=order_id)
+    serialized_data = user_serializer.OrderDetailsWithOrderItems(my_object).data
+    response = Response(serialized_data,content_type='application/json')
+    response.accepted_renderer = JSONRenderer()
+    response.accepted_media_type = 'application/json'
+    response.renderer_context = {
+        'view': ProductDetails,
+        'request': request,
+    }
+    return response
+
+# Manage Order Status
+class ManageOrder(APIView):
+    def put(self, request, order_id):
+        try:
+            obj = models.OrderModel.objects.get(pk=order_id)
+        except models.OrderModel.DoesNotExist:
+            return Response({'error': 'Object does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = user_serializer.OrdersSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": 200,
+                "data": serializer.data,
+                "message": "Order Status Updated Succesfully"
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class HurryUpProducts(APIView):
+    def get(self,request):
+        products = models.Product.objects.filter(available_quantity__lt = 10)
+        product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
+        return Response({
+            'status':200,
+            'data':product_serializer.data,
+            'message':'all orders fetched'
+        })
+
+
 

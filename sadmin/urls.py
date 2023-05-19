@@ -2,10 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-
     # Super Admin Login API View
     path("login/",views.SuperAdminLoginView.as_view()),
-
     # Categories
     path("add-category/",views.AddCategory.as_view()),
     path("all-category/",views.AllCategory.as_view()),
@@ -28,6 +26,7 @@ urlpatterns = [
     path("product-details/<int:product_id>/",views.ProductDetails),
     path("edit-product/<int:product_id>/",views.EditProduct.as_view()),
     path("delete-product-images-colors/<int:prod_img_id>/",views.DeleteParticularProductImage.as_view()),
+    path("delete-product/<int:product_id>/",views.DeleteProduct.as_view()),
     # General APIs
     path('states/', views.StatesList.as_view()),
     path('create-states/', views.CreateStates.as_view()),
@@ -49,25 +48,27 @@ urlpatterns = [
     path('delete-banner/<int:banner_id>/', views.DeleteBanner.as_view()),
     path('edit-banner/<int:banner_id>/', views.EditBanner.as_view()),
     path('particular-banner/<int:banner_id>/',views.ParticularBannerDetails.as_view()),
-
     # Chats
     path('all-users-in-chats/',views.AllUsersInChats.as_view()),
     path('particular-users-chat/<str:user_id>/',views.ParticularUsersChats.as_view()),
     path('reply-to-chat/',views.ChatWithUsReply.as_view()),
     path('particular-chat-all-replies/<int:chat_id>/',views.ParticularChatAllReplies.as_view()),
-
-    
     # Users
     path('particular-user-details/<str:user_id>/',views.ParticularUserDetails.as_view()),
-
     # Coupons
     path("add-coupons/",views.AddCoupon.as_view()),
     path("get-coupons/",views.GetCoupons.as_view()),
-    path("get-coupon-details/<int:coupon_id>/",views.ParticularCouponDetails.as_view()),
+    path("get-coupon-details/<int:coupon_id>/",views.ParticularCouponDetails),
     path("edit-coupon-details/<int:coupon_id>/",views.EditCouponDetails.as_view()),
     path("delete-coupon/<int:coupon_id>/",views.DeleteCoupon.as_view()),
-
-
+    # Analytics
+    path("more-in-wishlist/",views.MoreInWishlist.as_view()),
+    # All Orders
+    path("all-orders/",views.AllOrders.as_view()),
+    path("particular-order-details/<int:order_id>/",views.ParticularOrderDetails),
+    path("manage-order/<int:order_id>/",views.ManageOrder.as_view()),
+    # Hurry up products
+    path("products-lessthan-10-quantity/",views.HurryUpProducts.as_view()),
 ]
 
 

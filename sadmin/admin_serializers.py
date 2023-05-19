@@ -94,14 +94,38 @@ class SubCategoryTableSerializer(serializers.ModelSerializer):
 
 # Product Serializer
 class PrpductSerializer(serializers.ModelSerializer):
+    size_width_5 = serializers.CharField(allow_blank=True)
+    size_width_4 = serializers.CharField(allow_blank=True)
+    size_width_3 = serializers.CharField(allow_blank=True)
+    size_width_2 = serializers.CharField(allow_blank=True)
+    size_width_1 = serializers.CharField(allow_blank=True)
+
+    size_height_5 = serializers.CharField(allow_blank=True)
+    size_height_4 = serializers.CharField(allow_blank=True)
+    size_height_3 = serializers.CharField(allow_blank=True)
+    size_height_2 = serializers.CharField(allow_blank=True)
+    size_height_1 = serializers.CharField(allow_blank=True)
+
+    size_lable_5 = serializers.CharField(allow_blank=True)
+    size_lable_4 = serializers.CharField(allow_blank=True)
+    size_lable_3 = serializers.CharField(allow_blank=True)
+    size_lable_2 = serializers.CharField(allow_blank=True)
+    size_lable_1 = serializers.CharField(allow_blank=True)
+
     class Meta:
         model = models.Product
         fields = "__all__"
+
+
+    
+
+
     def create(self,validated_data):
         product = models.Product.objects.create(size_selling_price_5=validated_data['size_selling_price_5'],size_selling_price_4=validated_data['size_selling_price_4'],size_selling_price_3=validated_data['size_selling_price_3'],size_selling_price_2=validated_data['size_selling_price_2'],size_selling_price_1=validated_data['size_selling_price_1'],size_actual_price_5=validated_data['size_actual_price_5'],size_actual_price_4=validated_data['size_actual_price_4'],size_actual_price_3=validated_data['size_actual_price_3'],size_actual_price_2=validated_data['size_actual_price_2'],size_actual_price_1=validated_data['size_actual_price_1'],size_width_5=validated_data['size_width_5'],size_width_4=validated_data['size_width_4'],size_width_3=validated_data['size_width_3'],size_width_2=validated_data['size_width_2'],size_width_1=validated_data['size_width_1'],size_height_5=validated_data['size_height_5'],size_height_4=validated_data['size_height_4'],size_height_3=validated_data['size_height_3'],size_height_2=validated_data['size_height_2'],size_height_1=validated_data['size_height_1'],size_lable_5=validated_data['size_lable_5'],size_lable_4=validated_data['size_lable_4'],size_lable_3=validated_data['size_lable_3'],size_lable_2=validated_data['size_lable_2'],size_lable_1=validated_data['size_lable_1'],thumbnail=validated_data['thumbnail'],available_quantity=validated_data['available_quantity'],sku_code = validated_data['sku_code'],sub_category = validated_data['sub_category'],category = validated_data['category'],description=validated_data['description'],product_title = validated_data['product_title'])
         product.save()
         return product
-    
+
+
 class ProductImageColorSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ProductColorImages
@@ -114,10 +138,46 @@ class ProductImageColorSerializer(serializers.ModelSerializer):
 
 class ProductComplteDetailsSerializer(serializers.ModelSerializer):
     product_images = ProductImageColorSerializer(many=True,read_only = True)
+    discount_1 = serializers.SerializerMethodField()
+    discount_2 = serializers.SerializerMethodField()
+    discount_3 = serializers.SerializerMethodField()
+    discount_4 = serializers.SerializerMethodField()
+    discount_5 = serializers.SerializerMethodField()
+
     class Meta:
         model = models.Product
         fields = "__all__"
         depth = 1
+
+    def get_discount_1(self, obj):
+        if obj.size_actual_price_1 and obj.size_selling_price_1:
+            discount = ((obj.size_actual_price_1 - obj.size_selling_price_1) / obj.size_actual_price_1) * 100
+            return round(discount, 2)
+        return 0
+
+    def get_discount_2(self, obj):
+        if obj.size_actual_price_2 and obj.size_selling_price_2:
+            discount = ((obj.size_actual_price_2 - obj.size_selling_price_2) / obj.size_actual_price_2) * 100
+            return round(discount, 2)
+        return 0
+    
+    def get_discount_3(self, obj):
+        if obj.size_actual_price_3 and obj.size_selling_price_3:
+            discount = ((obj.size_actual_price_3 - obj.size_selling_price_3) / obj.size_actual_price_3) * 100
+            return round(discount, 2)
+        return 0
+    
+    def get_discount_4(self, obj):
+        if obj.size_actual_price_4 and obj.size_selling_price_4:
+            discount = ((obj.size_actual_price_4 - obj.size_selling_price_4) / obj.size_actual_price_4) * 100
+            return round(discount, 2)
+        return 0
+
+    def get_discount_5(self, obj):
+        if obj.size_actual_price_5 and obj.size_selling_price_5:
+            discount = ((obj.size_actual_price_5 - obj.size_selling_price_5) / obj.size_actual_price_5) * 100
+            return round(discount, 2)
+        return 0
 
 
 class HighlightStoriesSerializer(serializers.ModelSerializer):
@@ -134,7 +194,7 @@ class BannerSerializer(serializers.ModelSerializer):
         model=models.Banners
         fields='__all__'
     def create(self,validated_data):
-        Banners=models.Banners.objects.create(banner=validated_data['banner'],title=validated_data['title'],description=validated_data['description'])
+        Banners=models.Banners.objects.create(sub_category=validated_data['sub_category'],category=validated_data['category'],banner=validated_data['banner'],title=validated_data['title'],description=validated_data['description'])
         Banners.save()
         return Banners
 
