@@ -53,6 +53,12 @@ urlpatterns = [
     # Empty Users Cart
     path("empty-users-cart/",views.EmptyUsersCart.as_view()),
     # Top Selling Products
-    path("top-selling-products/",views.TopSellingProducts.as_view())
+    path("top-selling-products/",views.TopSellingProducts.as_view()),
+    # Request for Order Cancellation
+    path('request-for-order-cancellation/',views.RequestForOrderCancellation.as_view()),
+    # Request for Returning Order
+    path('request-order-return/',views.RequestForReturn.as_view()),
 ]
+
+
 

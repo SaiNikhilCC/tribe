@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from tribe.customauth import CustomAuthentication
 
 #############################################################   States General API   #####################################################################
 # All States List API View
@@ -56,7 +57,6 @@ class MandalsList(generics.ListCreateAPIView):
         district_id = self.kwargs['district_id']
         district = models.Districts.objects.get(pk=district_id)
         return (models.Mandal.objects.filter(district=district))
-
 
 #############################################################   Super Admin   #####################################################################
 # Super Admin Login View
@@ -543,7 +543,6 @@ class DeleteParticularProductImage(APIView):
                 'message': 'Not Found'
             })
 
-
 # All Products
 class AllProducts(APIView):
     def get(self, request):
@@ -597,7 +596,6 @@ class EditProduct(APIView):
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 # Delete Product API View
 class DeleteProduct(APIView):
     def delete(self,request,product_id):
@@ -613,7 +611,6 @@ class DeleteProduct(APIView):
                 'status':400,
                 'message':'No Product Found With This ID'
             })
-
 
 # Edit Sub Category
 class EditSubCategory(APIView):
@@ -744,7 +741,7 @@ def ParticularCouponDetails(request,coupon_id):
 
 # Edit Coupon
 class EditCouponDetails(APIView):
-    # authentication_classes = [CustomAuthentication]
+    authentication_classes = [CustomAuthentication]
     def put(self, request, coupon_id):
         try:
             obj = models.Coupons.objects.get(pk=coupon_id)
@@ -759,7 +756,6 @@ class EditCouponDetails(APIView):
                 "message": "Coupon  Updated Succesfully"
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 # Delete Coupon
@@ -820,23 +816,21 @@ def ParticularOrderDetails(request,order_id):
     return response
 
 # Manage Order Status
-class ManageOrder(APIView):
-    def put(self, request, order_id):
-        try:
-            obj = models.OrderModel.objects.get(pk=order_id)
-        except models.OrderModel.DoesNotExist:
-            return Response({'error': 'Object does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = user_serializer.OrdersSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "status": 200,
-                "data": serializer.data,
-                "message": "Order Status Updated Succesfully"
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+# class ManageOrder(APIView):
+#     def put(self, request, order_id):
+#         try:
+#             obj = models.OrderModel.objects.get(pk=order_id)
+#         except models.OrderModel.DoesNotExist:
+#             return Response({'error': 'Object does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+#         serializer = user_serializer.OrdersSerializer(obj, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response({
+#                 "status": 200,
+#                 "data": serializer.data,
+#                 "message": "Order Status Updated Succesfully"
+#             })
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class HurryUpProducts(APIView):
     def get(self,request):
@@ -848,5 +842,81 @@ class HurryUpProducts(APIView):
             'message':'all orders fetched'
         })
 
+# ####################################################### Handle Order Status #####################################################################
+import datetime
+# Change Order Status to Confirmed
+class OrderConfirmed(APIView):
+    def post(self,request,order_id):
+        order = models.OrderModel.objects.get(pk=order_id)
+        order.order_status = "2"
+        order.is_order_confirmed = True
+        order.order_confirmedAt = datetime.datetime.now()
+        order.save()
+        return Response({
+            "status":200,
+            "message":"Order Status Updated"
+        })
+
+# Change Order Status To  Shipped
+class OrderShipped(APIView):
+    def post(self,request,order_id):
+        order = models.OrderModel.objects.get(pk=order_id)
+        order.order_status = "3"
+        order.is_order_shipped = True
+        order.order_shippedAt = datetime.datetime.now()
+        order.save()
+        return Response({
+            "status":200,
+            "message":"Order Status Updated"
+        })
+
+# Change Order Status To On THe Way
+class OrderOnTHeWay(APIView):
+    def post(self,request,order_id):
+        order = models.OrderModel.objects.get(pk=order_id)
+        order.order_status = "4"
+        order.is_order_on_the_way = True
+        order.order_on_the_wayAt = datetime.datetime.now()
+        order.save()
+        return Response({
+            "status":200,
+            "message":"Order Status Updated"
+        })
+
+# Change Order Status To Delivered
+class OrderDelivered(APIView):
+    def post(self,request,order_id):
+        order = models.OrderModel.objects.get(pk=order_id)
+        order.order_status = "5"
+        order.is_delivered = True
+        order.order_deliveredAt = datetime.datetime.now()
+        order.save()
+        return Response({
+            "status":200,
+            "message":"Order Status Updated"
+        })
+
+# #################################################################  Dashboard Analytics  ##############################################
+# Top Selling Products
+class TopSellingProducts(APIView):
+    def get(self,request):
+        products = models.Product.objects.all().order_by('no_of_orders').reverse()
+        product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
+        return Response({
+            'status':200,
+            'data':product_serializer.data
+        })
+
+# #################################################################  All Users  ##############################################
+# All User API
+class AllUsers(APIView):
+    def get(self,request):
+        users = models.Users.objects.all()
+        users_serializer = user_serializer.UserSerializer(users,many=True)
+        return Response({
+            "status":200,
+            "data":users_serializer.data,
+            "message":"All Users Fetched"
+        })
 
 

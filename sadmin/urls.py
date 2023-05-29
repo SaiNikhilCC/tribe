@@ -66,15 +66,19 @@ urlpatterns = [
     # All Orders
     path("all-orders/",views.AllOrders.as_view()),
     path("particular-order-details/<int:order_id>/",views.ParticularOrderDetails),
-    path("manage-order/<int:order_id>/",views.ManageOrder.as_view()),
+    # path("manage-order/<int:order_id>/",views.ManageOrder.as_view()),
     # Hurry up products
     path("products-lessthan-10-quantity/",views.HurryUpProducts.as_view()),
+    # Handle Order Status
+    path("order-confirmed/<int:order_id>/",views.OrderConfirmed.as_view()),
+    path("order-shipped/<int:order_id>/",views.OrderShipped.as_view()),
+    path("order-on-the-way/<int:order_id>/",views.OrderOnTHeWay.as_view()),
+    path("order-delivered/<int:order_id>/",views.OrderDelivered.as_view()),
+    # Top Selling Products
+    path("top-selling-products/",views.TopSellingProducts.as_view()),
+    # All users
+    path("all-users/",views.AllUsers.as_view()),
 ]
-
-
-
-
-
 
 
 

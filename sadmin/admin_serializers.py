@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from maintribe import models
 
-
-
 # States Serializer
 class StateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,8 +12,6 @@ class CreateStateSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.States
         fields = ['id', 'state_representing_image', 'state_name']
-
-
 
 # District Serializer
 class DistrictSerializer(serializers.ModelSerializer):
@@ -34,7 +30,6 @@ class AllDistrictsDetailedSerializer(serializers.ModelSerializer):
         model = models.Districts
         fields = '__all__'
         depth=1
-
 
 # Mandals Serializer
 class MAndalSerializer(serializers.ModelSerializer):
@@ -116,15 +111,10 @@ class PrpductSerializer(serializers.ModelSerializer):
         model = models.Product
         fields = "__all__"
 
-
-    
-
-
     def create(self,validated_data):
         product = models.Product.objects.create(size_selling_price_5=validated_data['size_selling_price_5'],size_selling_price_4=validated_data['size_selling_price_4'],size_selling_price_3=validated_data['size_selling_price_3'],size_selling_price_2=validated_data['size_selling_price_2'],size_selling_price_1=validated_data['size_selling_price_1'],size_actual_price_5=validated_data['size_actual_price_5'],size_actual_price_4=validated_data['size_actual_price_4'],size_actual_price_3=validated_data['size_actual_price_3'],size_actual_price_2=validated_data['size_actual_price_2'],size_actual_price_1=validated_data['size_actual_price_1'],size_width_5=validated_data['size_width_5'],size_width_4=validated_data['size_width_4'],size_width_3=validated_data['size_width_3'],size_width_2=validated_data['size_width_2'],size_width_1=validated_data['size_width_1'],size_height_5=validated_data['size_height_5'],size_height_4=validated_data['size_height_4'],size_height_3=validated_data['size_height_3'],size_height_2=validated_data['size_height_2'],size_height_1=validated_data['size_height_1'],size_lable_5=validated_data['size_lable_5'],size_lable_4=validated_data['size_lable_4'],size_lable_3=validated_data['size_lable_3'],size_lable_2=validated_data['size_lable_2'],size_lable_1=validated_data['size_lable_1'],thumbnail=validated_data['thumbnail'],available_quantity=validated_data['available_quantity'],sku_code = validated_data['sku_code'],sub_category = validated_data['sub_category'],category = validated_data['category'],description=validated_data['description'],product_title = validated_data['product_title'])
         product.save()
         return product
-
 
 class ProductImageColorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -134,7 +124,6 @@ class ProductImageColorSerializer(serializers.ModelSerializer):
         image_product = models.ProductColorImages.objects.create(product=validated_data['product'], image=validated_data['image'],color_name=validated_data['color_name'],color_code=validated_data['color_code'])
         image_product.save()
         return image_product
-
 
 class ProductComplteDetailsSerializer(serializers.ModelSerializer):
     product_images = ProductImageColorSerializer(many=True,read_only = True)
@@ -179,7 +168,6 @@ class ProductComplteDetailsSerializer(serializers.ModelSerializer):
             return round(discount, 2)
         return 0
 
-
 class HighlightStoriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.HighlightStories
@@ -213,8 +201,7 @@ class ChatWithUsReplySerializer(serializers.ModelSerializer):
     def create(self,validated_data):
         chatWithUs = models.ChatWithUsReply.objects.create(reply_text=validated_data['reply_text'],userChat_id=validated_data['userChat_id'])
         chatWithUs.save()
-        return chatWithUs
-                             
+        return chatWithUs                   
 
 # Serializer For User Details To Access in Admin Dashboard
 class EndUserSerializer(serializers.ModelSerializer):
@@ -236,6 +223,15 @@ class CounponsSerializer(serializers.ModelSerializer):
 
 
 
+
+
+
+
+
+
+
+
+  
 
 
 

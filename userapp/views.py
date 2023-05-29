@@ -14,30 +14,13 @@ from rest_framework.response import Response
 from rest_framework import status
 import random
 from rest_framework.filters import SearchFilter
-
-# kkeojyeo
-
-
-# from rest_framework.decorators import api_view, authentication_classes, permission_classes
-# from rest_framework.authentication import get_authorization_header
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework.response import Response
-
-# @api_view(['GET'])
-# @authentication_classes([CustomAuthentication])
-# # @permission_classes([IsAuthenticated])
-# def user_data(request):
-#     user = request.user
-#     data = {
-#         user
-#     }
-#     return Response(data)
-
+from django.db.models import Q
+from rest_framework.renderers import JSONRenderer
 
 # FAST2SMS API To Send OTP Code
 url = "https://www.fast2sms.com/dev/bulkV2"
 def sendsms(num, phone,device_id):
-    payload = f"sender_id=FTWSMS&message=To Verify Your Mobile Number with Time2Time News is {num} {device_id}&route=v3&numbers={phone}"
+    payload = f"sender_id=FTWSMS&message=To Verify Your Mobile Number with The Neon Tribe is {num} {device_id}&route=v3&numbers={phone}"
     print(payload)
     headers = {
         'authorization': "ulBGWHeNb4qJ9KmyA1fip0RdPYh6kXjwEscTSQ3ODFvC2rgnIZezvgnxpTBcjmlJZQAkY7LKVSHGMU4d",
@@ -48,7 +31,6 @@ def sendsms(num, phone,device_id):
     response = requests.request("POST", url, data=payload, headers=headers)
     return True
 # End of FAST2SMS API
-
 
 # USER REGISTRATION AND REQUESTS FOR OTP
 class RegisterUser(APIView):
@@ -240,7 +222,6 @@ class AllProductsAccordingToSubCategory(APIView):
             'message': 'success'
         })
 
-
 # ################################################################   Address   ########################################################################################
 # Add Address
 class AddAddress(APIView):
@@ -260,7 +241,6 @@ class AddAddress(APIView):
                 'data':address_serializer.data,
                 'message':'Address Saved Succesfully'
             })
-        
 
 # Edit Address
 class EditAddress(APIView):
@@ -273,9 +253,12 @@ class EditAddress(APIView):
             address.city = request.data['city']
             address.full_name = request.data['full_name']
             address.hno = request.data['hno']
-            address.landmark = request.data['landmark']
+            # address.landmark = request.data['landmark']
             address.mobile = request.data['mobile']
             address.state = request.data['state']
+            address.is_home = request.data['is_home']
+            address.alternate_mobile = request.data['alternate_mobile']
+            address.pincode = request.data['pincode']
             address.user = models.Users.objects.get(pk=request.data['user'])
             address.save()
             updated_address = models.Address.objects.filter(id=address_id)
@@ -290,7 +273,6 @@ class EditAddress(APIView):
                 'status':400,
                 'message':'some error occurred'
             })
-
 
 # Particular Users Address
 class ParticularUsersAddress(APIView):
@@ -332,13 +314,12 @@ class GetAllProducts(generics.ListAPIView):
     serializer_class = admin_serializers.ProductComplteDetailsSerializer
     pagination_class = CustomPageNumberPagination
 
-
 # Particular Product Details
 class ParticularProductDetails(APIView):
     def post(self,request):
         product_id = request.data['product_id']
         products = models.Product.objects.filter(id=product_id)
-        product_serializer = user_serializer.ProductComplteDetailsSerializer(products,many=True)
+        product_serializer = user_serializer.ProductComplteDetailsWithReviews(products,many=True)
         return Response({
             'status':200,
             'data':product_serializer.data,
@@ -380,10 +361,10 @@ class AddItemToCart(APIView):
                 cart.quantity = request.data['quantity']
                 cart.save()
                 updated_cart = models.Cart.objects.filter(user = request.data['user'],product=request.data['product'])
-                updated_cart_serializer = user_serializer.CartSerializer(updated_cart,many=True)
+                updated_cart_serializer = user_serializer.CartDetailedSerializer(updated_cart,many=True)
                 return Response({
                     'status':200,
-                    'errors':updated_cart_serializer.data,
+                    'data':updated_cart_serializer.data,
                     'message':'Cart Updated Succesfully'
                 })
             else:
@@ -409,12 +390,13 @@ class AddItemToCart(APIView):
                     })
                 else:
                     cart_serializer.save()
+                    updated_cart = models.Cart.objects.filter(id=cart_serializer.data['id'])
+                    updated_cart_serializer = user_serializer.CartDetailedSerializer(updated_cart,many=True)
                     return Response({
                     'status':200,
-                    'data':cart_serializer.data,
+                    'data':updated_cart_serializer.data,
                     'message':'Item added To Cart'
                 })
-        
 
 # Particular Cart Details
 class GetParticularCartDetails(APIView):
@@ -532,10 +514,7 @@ class ChatWithus(APIView):
             })
 
 
-
 # ###################################################################  Search Product  ##########################################################################
-from django.db.models import Q
-
 # Global Search for products which can retrieve products even when the keyword is matched in the description
 class SearchProduct(APIView):
     def post(self, request, *args, **kwargs):
@@ -562,7 +541,6 @@ class SearchProduct(APIView):
                 'message':'products fetched'
             })
 
-
 #############################################################   User Reviews   #####################################################################
 # Post A Review
 class PostReview(APIView):
@@ -586,7 +564,7 @@ class PostReview(APIView):
 class ParticularProductReviews(APIView):
     def get(self,request,product_id):
         product_reviews = models.Reviews.objects.filter(product_id=product_id)
-        product_reviews_serializer = user_serializer.ReviewSerializer(product_reviews,many=True)
+        product_reviews_serializer = user_serializer.ReviewDetailedSerializer(product_reviews,many=True)
         return Response({
             'status': 200,
             'data': product_reviews_serializer.data,
@@ -639,7 +617,7 @@ class ParticularCouponDetails(APIView):
 #############################################################   Orders   #####################################################################
 # Placing An Order By End User
 class CreateOrders(APIView):
-    # authentication_classes = [CustomAuthentication]
+    authentication_classes = [CustomAuthentication]
     def post(self,request):
         order_serializer = user_serializer.OrdersSerializer(data= request.data)
         if not order_serializer.is_valid():
@@ -650,29 +628,27 @@ class CreateOrders(APIView):
             })
         else:
             order_serializer.save()
-            
             return Response({
                 'status': 200,
                 'data': order_serializer.data,
                 'message': 'Order Placed Succesfully'
             })
 
-# Order Details
 class OrderDetails(APIView):
-    # authentication_classes = [CustomAuthentication]
-    def post(self,request):
-        order_details = models.OrderModel.objects.filter(id = request.data['order_id'])
-        order_details_serializer = user_serializer.OrdersSerializer(order_details,many=True)
+    authentication_classes = [CustomAuthentication]
+    def post(self, request):
+        order_id = request.data['order_id']
+        order_details = models.OrderModel.objects.get(id=order_id)
+        order_details_serializer = user_serializer.OrderTrackingDetails(order_details)
         return Response({
             'status': 200,
             'data': order_details_serializer.data,
-            'message': 'Order Details Fetched Succesfully'
+            'message': 'Order Details Fetched Successfully'
         })
-    
 
 # Orders History
 class ParticularUserOrdersHistory(APIView):
-    # authentication_classes = [CustomAuthentication]
+    authentication_classes = [CustomAuthentication]
     def post(self,request):
         particular_users_orders = models.OrderModel.objects.filter(user_id = request.data['user'])
         users_orders_serializer = user_serializer.OrderDetailsWithOrderItems(particular_users_orders,many=True)
@@ -684,6 +660,7 @@ class ParticularUserOrdersHistory(APIView):
 
 # Adding Order Items to the order
 class AddOrderItems(APIView):
+    authentication_classes = [CustomAuthentication]
     def post(self, request):
         if request.data['quantity'] > models.Product.objects.get(pk=request.data['product']).available_quantity :
             return Response({
@@ -708,9 +685,9 @@ class AddOrderItems(APIView):
                 'message': 'Order Items Saved Succesfully'
             })
 
-
 # Empty Users Cart
 class EmptyUsersCart(APIView):
+    authentication_classes = [CustomAuthentication]
     def post(self,request):
         cart = models.Cart.objects.filter(user = request.data['user'])
         if cart:
@@ -728,6 +705,7 @@ class EmptyUsersCart(APIView):
 
 # Mostly Liked
 class TopSellingProducts(APIView):
+    authentication_classes = [CustomAuthentication]
     def get(self,request):
         products = models.Product.objects.all().order_by('no_of_orders').reverse()
         product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
@@ -736,21 +714,27 @@ class TopSellingProducts(APIView):
             'data':product_serializer.data
         })
 
+# Request For Order Cancellation
+class RequestForOrderCancellation(APIView):
+    authentication_classes = [CustomAuthentication]
+    def get(self,request):
+        order=models.OrderModel.objects.get(pk=request.data["order_id"])
+        order.order_status="20"
+        order.save()
+        return Response({
+            'status':200,
+            'message': "order cancel request sent"
+        })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Request for Returning Order
+class RequestForReturn(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        orders=models.OrderModel.objects.get(pk=request.data['order_id'])
+        orders.order_status="10"
+        orders.save()
+        return Response ({
+            'status':200,
+            'message':"Request for order return"
+        })
+        

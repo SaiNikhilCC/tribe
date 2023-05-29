@@ -78,15 +78,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "tribe.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tnt2',
+        'NAME': 'tnt4',
         'USER': 'root',
         'HOST': 'localhost',
         'PORT': '3306',
@@ -134,7 +132,6 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
@@ -159,6 +156,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
+
 
 CORS_ALLOW_ALL_ORIGINS = True
 
