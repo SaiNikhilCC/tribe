@@ -306,6 +306,26 @@ class DeleteAddress(APIView):
                 'bool':False,
                 'message':'No Address Found With This ID'
             })
+        
+# Particular address details
+class ParticularAddressDetails(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        address_id = request.data['address_id']
+        if models.Address.objects.filter(id=address_id):
+            address = models.Address.objects.get(pk=address_id)
+            address_serializer = user_serializer.AddressDetailedSerializer(address)
+            return Response({
+                'status':200,
+                'data':address_serializer.data,
+                'message':'Particular Address Details Fetched'
+            })
+        else:
+            return Response({
+                'status':400,
+                'bool':False,
+                'message':'No Address Found With This ID'
+            })
 
 ################################################################### Products #################################################################
 # API To Fetch All Products
@@ -737,4 +757,3 @@ class RequestForReturn(APIView):
             'status':200,
             'message':"Request for order return"
         })
-        

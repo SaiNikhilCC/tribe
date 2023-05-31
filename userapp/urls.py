@@ -21,7 +21,8 @@ urlpatterns = [
     path('edit-address/',views.EditAddress.as_view()),
     path('particular-user-all-address/',views.ParticularUsersAddress.as_view()),
     path('remove-address/',views.DeleteAddress.as_view()),
-    # Products 
+    path('particular-address-details/',views.ParticularAddressDetails.as_view()),
+    # Products
     path('get-all-products/',views.GetAllProducts.as_view()),
     path('particular-product-details/',views.ParticularProductDetails.as_view()),
     # Search Product
