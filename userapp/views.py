@@ -725,7 +725,7 @@ class EmptyUsersCart(APIView):
 
 # Mostly Liked
 class TopSellingProducts(APIView):
-    authentication_classes = [CustomAuthentication]
+#     authentication_classes = [CustomAuthentication]
     def get(self,request):
         products = models.Product.objects.all().order_by('no_of_orders').reverse()
         product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
