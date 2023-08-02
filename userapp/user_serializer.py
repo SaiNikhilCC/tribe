@@ -4,13 +4,6 @@ import uuid
 import random
 from rest_framework.serializers import ValidationError
 
-class EmptyStringIfNullImageField(serializers.ImageField):
-    def to_representation(self, value):
-        if value is None:
-            return ""
-        return super().to_representation(value)
-    
-
 # End User Serializer
 class UserSerializer(serializers.ModelSerializer):
     profile = serializers.ImageField(required=False, allow_null=True, default="")
@@ -18,13 +11,11 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Users
         fields = '__all__'
-
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if 'profile' not in data or data['profile'] is None:
             data['profile'] = ''
         return data
-
     def create(self, validated_data):
         otp_generated = random.randint(10000, 99999)
         phone = validated_data['phone']
@@ -85,14 +76,12 @@ class CartDetailedSerializer(serializers.ModelSerializer):
         model = models.Cart
         fields = "__all__"
         depth = 2
-
     def get_user(self, obj):
         user = obj.user
         profile = user.profile or ""  # Check if profile exists, otherwise set it to an empty string
         user_data = UserSerializer(user).data
         user_data['profile'] = profile
         return user_data
-
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         user_data = representation.get('user')
@@ -139,6 +128,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         review.save()
         return review
 
+# Reviews Detailed Serializer
 class ReviewDetailedSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Reviews
@@ -183,10 +173,40 @@ class ProductImagesSerializer(serializers.ModelSerializer):
 # Complete Product Serializer
 class ProductComplteDetailsSerializer(serializers.ModelSerializer):
     product_images = ProductImagesSerializer(many=True,read_only = True)
+    discount_1 = serializers.SerializerMethodField()
+    discount_2 = serializers.SerializerMethodField()
+    discount_3 = serializers.SerializerMethodField()
+    discount_4 = serializers.SerializerMethodField()
+    discount_5 = serializers.SerializerMethodField()
     class Meta:
         model = models.Product
         fields = "__all__"
         depth = 1
+    def get_discount_1(self, obj):
+        if obj.size_actual_price_1 and obj.size_selling_price_1:
+            discount = ((obj.size_actual_price_1 - obj.size_selling_price_1) / obj.size_actual_price_1) * 100
+            return round(discount, 2)
+        return 0
+    def get_discount_2(self, obj):
+        if obj.size_actual_price_2 and obj.size_selling_price_2:
+            discount = ((obj.size_actual_price_2 - obj.size_selling_price_2) / obj.size_actual_price_2) * 100
+            return round(discount, 2)
+        return 0
+    def get_discount_3(self, obj):
+        if obj.size_actual_price_3 and obj.size_selling_price_3:
+            discount = ((obj.size_actual_price_3 - obj.size_selling_price_3) / obj.size_actual_price_3) * 100
+            return round(discount, 2)
+        return 0
+    def get_discount_4(self, obj):
+        if obj.size_actual_price_4 and obj.size_selling_price_4:
+            discount = ((obj.size_actual_price_4 - obj.size_selling_price_4) / obj.size_actual_price_4) * 100
+            return round(discount, 2)
+        return 0
+    def get_discount_5(self, obj):
+        if obj.size_actual_price_5 and obj.size_selling_price_5:
+            discount = ((obj.size_actual_price_5 - obj.size_selling_price_5) / obj.size_actual_price_5) * 100
+            return round(discount, 2)
+        return 0
 
 # Product Reviews Serializer
 class ProductReviewsSerializer(serializers.ModelSerializer):
@@ -198,20 +218,26 @@ class ProductReviewsSerializer(serializers.ModelSerializer):
 class ProductComplteDetailsWithReviews(serializers.ModelSerializer):
     product_images = ProductImagesSerializer(many=True,read_only = True)
     product_reviews = ProductReviewsSerializer(many=True,read_only = True)
-
     class Meta:
         model = models.Product
         fields = "__all__"
         depth = 1
 
 
-# All Products With Subcategory
+# # All Products With Subcategory
 class AllProductsAccordingToSubCategory(serializers.ModelSerializer):
-    sub_cat_product = ProductComplteDetailsSerializer(many=True,read_only=True)
+    sub_cat_product = ProductComplteDetailsSerializer(many=True, read_only=True)
     class Meta:
         model = models.SubCategories
         fields = "__all__"
-        depth=1
+        depth = 1
+    def to_representation(self, instance):
+        sub_category = super().to_representation(instance)
+        visible_products = models.Product.objects.filter(sub_category=instance, is_visible=True)
+        visible_products_serializer = ProductComplteDetailsSerializer(visible_products, many=True)
+        sub_category['sub_cat_product'] = visible_products_serializer.data
+        return sub_category
+
 
 # Product Serializer
 class PrpductSerializer(serializers.ModelSerializer):
@@ -236,19 +262,17 @@ class OrderDetailsWithOrderItems(serializers.ModelSerializer):
     order_items = OrderItemsDetailedSerializer(many=True,read_only = True)
     user = UserSerializer()
     address = AddressDetailedSerializer()
-
     class Meta:
         model = models.OrderModel
         fields = "__all__"
         depth = 2
-
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         if 'coupon' in representation and representation['coupon'] is None:
             representation['coupon'] = ""
         return representation
 
-
+# Order Items Serializer For Order Tracing 
 class OrderItemsForOrderTracking(serializers.ModelSerializer):
     product = ProductComplteDetailsSerializer()
     class Meta:
@@ -262,12 +286,94 @@ class OrderTrackingDetails(serializers.ModelSerializer):
         model = models.OrderModel
         fields = "__all__"
         depth = 2
-
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         if 'coupon' in representation and representation['coupon'] is None:
             representation['coupon'] = ""
         return representation
+
+#############################################################################   Phase - 2   #############################################################################
+# Customizer Place Order
+class NewCustomizer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizedProduct
+        fields = "__all__"
+    def create(self, validated_data):
+        new_customizer_product = models.CustomizedProduct.objects.create(**validated_data)
+        new_customizer_product.save()
+        return new_customizer_product
+
+# PlaceOrder For Customized Product
+class PlaceOrderForCustomizedProduct(serializers.ModelSerializer):
+    class Meta:
+        model = models.PlaceOrderForCustomizedProducts
+        fields = "__all__"
+    def create(self,validated_data):
+        new_order_for_customizer = models.PlaceOrderForCustomizedProducts(**validated_data)
+        new_order_for_customizer.save()
+        return new_order_for_customizer
+
+# Detailed Place Order For Customizer
+class DetailedCustomizerOrders(serializers.ModelSerializer):
+    class Meta:
+        model = models.PlaceOrderForCustomizedProducts
+        fields = "__all__"
+        depth = 2
+    
+# Complete Order Details 
+class OrderDetailsForCustomizer(serializers.ModelSerializer):
+    user = UserSerializer()
+    address = AddressDetailedSerializer()
+    class Meta:
+        model = models.PlaceOrderForCustomizedProducts
+        fields = "__all__"
+        depth = 2
+
+#############################################################################   Logo Templates   #############################################################################
+class PlaceOrderSerializerForLogoTemplate(serializers.ModelSerializer):
+    template_product = serializers.PrimaryKeyRelatedField(queryset=models.CustomizableLogoTemplates.objects.all(), write_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset = models.Users.objects.all(),write_only=True)
+    class Meta:
+        model = models.PlaceOrderForLogoTemplate
+        fields = "__all__"
+        depth = 2
+
+    def create(self, validated_data):
+        template_product = validated_data.pop('template_product')
+        new_order_for_logo_template = models.PlaceOrderForLogoTemplate(template_product=template_product, **validated_data)
+        new_order_for_logo_template.save()
+        return new_order_for_logo_template
+
+# Complete Order Details 
+class OrderDetailsForLogo(serializers.ModelSerializer):
+    user = UserSerializer()
+    address = AddressDetailedSerializer()
+    class Meta:
+        model = models.PlaceOrderForLogoTemplate
+        fields = "__all__"
+        depth = 2
+
+# Detailed Place Order For Logo Template
+class DetailedLogoTemplateOrders(serializers.ModelSerializer):
+    class Meta:
+        model = models.PlaceOrderForLogoTemplate
+        fields = "__all__"
+        depth = 2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

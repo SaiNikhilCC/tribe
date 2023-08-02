@@ -21,7 +21,8 @@ urlpatterns = [
     path('edit-address/',views.EditAddress.as_view()),
     path('particular-user-all-address/',views.ParticularUsersAddress.as_view()),
     path('remove-address/',views.DeleteAddress.as_view()),
-    # Products 
+    path('particular-address-details/',views.ParticularAddressDetails.as_view()),
+    # Products
     path('get-all-products/',views.GetAllProducts.as_view()),
     path('particular-product-details/',views.ParticularProductDetails.as_view()),
     # Search Product
@@ -58,6 +59,33 @@ urlpatterns = [
     path('request-for-order-cancellation/',views.RequestForOrderCancellation.as_view()),
     # Request for Returning Order
     path('request-order-return/',views.RequestForReturn.as_view()),
+
+    
+    # #############################################################################   Phase - 2   #############################################################################
+    # Customizer Fonts
+    path("all-customizer-get/",views.AllCustomizerGET.as_view()),
+    # New Customizer
+    path("new-customizer/",views.NewCustomizer.as_view()),
+    # Orders For Customizer
+    path("place-new-order-customizer/",views.CreateOrdersForCustomizer.as_view()),
+    path("particular-order-details-for-customizer/",views.OrderDetailsForCustomizer.as_view()),
+    path("particular-user-all-order-for-customizer/",views.ParticularUserOrdersHistoryForCustomizer.as_view()),
+    path("customizer-order-request-for-order-cancellation/",views.CustomizerOrderRequestForOrderCancellation.as_view()),
+    path('customizer-order-request-order-return/',views.CustomizerOrderRequestForReturn.as_view()),
+
+    # ALl Templates
+    path("all-templates/",views.AllTemplates.as_view()),
+    # Orders For Customizer
+    path("place-order-logo-template/",views.CreateOrdersForLogoTemplate.as_view()),
+    path("particular-order-details-for-logo/",views.OrderDetailsForLogoTemplate.as_view()),
+    path("particular-user-all-order-for-logo/",views.ParticularUserOrdersHistoryForLogo.as_view()),
+    path("logo-order-request-for-order-cancellation/",views.LogoOrderRequestForOrderCancellation.as_view()),
+    path('logo-order-request-order-return/',views.LogoOrderRequestForReturn.as_view()),
+
+
+    # # Empty Users Wishlist
+    # path("empty-users-wishlist/",views.EmptyUsersWishList.as_view()),
+
 ]
 
 

@@ -8,6 +8,7 @@ class StateSerializer(serializers.ModelSerializer):
         fields = ['id', 'state_representing_image', 'state_name']
         depth = 1
 
+# Serializer To Create State
 class CreateStateSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.States
@@ -20,11 +21,13 @@ class DistrictSerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
+# Serializer for Creating District
 class CreateDistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Districts
         fields = '__all__'
 
+# Serializer For District Details
 class AllDistrictsDetailedSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Districts
@@ -38,11 +41,13 @@ class MAndalSerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
+# Serializer For Creating A Mandal
 class CreateMandalSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Mandal
         fields = '__all__'
 
+# Serializer For All Mandals List
 class AllMandalsDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Mandal
@@ -54,7 +59,6 @@ class SuperAdminAccSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.SuperAdminAcc
         fields = "__all__"
-
 
 # Category Serializer
 class CategorySerializer(serializers.ModelSerializer):
@@ -94,28 +98,25 @@ class PrpductSerializer(serializers.ModelSerializer):
     size_width_3 = serializers.CharField(allow_blank=True)
     size_width_2 = serializers.CharField(allow_blank=True)
     size_width_1 = serializers.CharField(allow_blank=True)
-
     size_height_5 = serializers.CharField(allow_blank=True)
     size_height_4 = serializers.CharField(allow_blank=True)
     size_height_3 = serializers.CharField(allow_blank=True)
     size_height_2 = serializers.CharField(allow_blank=True)
     size_height_1 = serializers.CharField(allow_blank=True)
-
     size_lable_5 = serializers.CharField(allow_blank=True)
     size_lable_4 = serializers.CharField(allow_blank=True)
     size_lable_3 = serializers.CharField(allow_blank=True)
     size_lable_2 = serializers.CharField(allow_blank=True)
     size_lable_1 = serializers.CharField(allow_blank=True)
-
     class Meta:
         model = models.Product
         fields = "__all__"
-
     def create(self,validated_data):
         product = models.Product.objects.create(size_selling_price_5=validated_data['size_selling_price_5'],size_selling_price_4=validated_data['size_selling_price_4'],size_selling_price_3=validated_data['size_selling_price_3'],size_selling_price_2=validated_data['size_selling_price_2'],size_selling_price_1=validated_data['size_selling_price_1'],size_actual_price_5=validated_data['size_actual_price_5'],size_actual_price_4=validated_data['size_actual_price_4'],size_actual_price_3=validated_data['size_actual_price_3'],size_actual_price_2=validated_data['size_actual_price_2'],size_actual_price_1=validated_data['size_actual_price_1'],size_width_5=validated_data['size_width_5'],size_width_4=validated_data['size_width_4'],size_width_3=validated_data['size_width_3'],size_width_2=validated_data['size_width_2'],size_width_1=validated_data['size_width_1'],size_height_5=validated_data['size_height_5'],size_height_4=validated_data['size_height_4'],size_height_3=validated_data['size_height_3'],size_height_2=validated_data['size_height_2'],size_height_1=validated_data['size_height_1'],size_lable_5=validated_data['size_lable_5'],size_lable_4=validated_data['size_lable_4'],size_lable_3=validated_data['size_lable_3'],size_lable_2=validated_data['size_lable_2'],size_lable_1=validated_data['size_lable_1'],thumbnail=validated_data['thumbnail'],available_quantity=validated_data['available_quantity'],sku_code = validated_data['sku_code'],sub_category = validated_data['sub_category'],category = validated_data['category'],description=validated_data['description'],product_title = validated_data['product_title'])
         product.save()
         return product
 
+# Serializer for Product Images And Colors
 class ProductImageColorSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ProductColorImages
@@ -125,6 +126,7 @@ class ProductImageColorSerializer(serializers.ModelSerializer):
         image_product.save()
         return image_product
 
+# Product Completed Detailed Serializer
 class ProductComplteDetailsSerializer(serializers.ModelSerializer):
     product_images = ProductImageColorSerializer(many=True,read_only = True)
     discount_1 = serializers.SerializerMethodField()
@@ -132,42 +134,37 @@ class ProductComplteDetailsSerializer(serializers.ModelSerializer):
     discount_3 = serializers.SerializerMethodField()
     discount_4 = serializers.SerializerMethodField()
     discount_5 = serializers.SerializerMethodField()
-
     class Meta:
         model = models.Product
         fields = "__all__"
         depth = 1
-
     def get_discount_1(self, obj):
         if obj.size_actual_price_1 and obj.size_selling_price_1:
             discount = ((obj.size_actual_price_1 - obj.size_selling_price_1) / obj.size_actual_price_1) * 100
             return round(discount, 2)
         return 0
-
     def get_discount_2(self, obj):
         if obj.size_actual_price_2 and obj.size_selling_price_2:
             discount = ((obj.size_actual_price_2 - obj.size_selling_price_2) / obj.size_actual_price_2) * 100
             return round(discount, 2)
         return 0
-    
     def get_discount_3(self, obj):
         if obj.size_actual_price_3 and obj.size_selling_price_3:
             discount = ((obj.size_actual_price_3 - obj.size_selling_price_3) / obj.size_actual_price_3) * 100
             return round(discount, 2)
         return 0
-    
     def get_discount_4(self, obj):
         if obj.size_actual_price_4 and obj.size_selling_price_4:
             discount = ((obj.size_actual_price_4 - obj.size_selling_price_4) / obj.size_actual_price_4) * 100
             return round(discount, 2)
         return 0
-
     def get_discount_5(self, obj):
         if obj.size_actual_price_5 and obj.size_selling_price_5:
             discount = ((obj.size_actual_price_5 - obj.size_selling_price_5) / obj.size_actual_price_5) * 100
             return round(discount, 2)
         return 0
 
+# Serializer for Creating Stories and Story Details
 class HighlightStoriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.HighlightStories
@@ -177,6 +174,7 @@ class HighlightStoriesSerializer(serializers.ModelSerializer):
         story.save()
         return story
 
+# Serializer for Creating Banners and Banner Details
 class BannerSerializer(serializers.ModelSerializer):
     class Meta:
         model=models.Banners
@@ -219,6 +217,77 @@ class CounponsSerializer(serializers.ModelSerializer):
         coupon.save()
         return coupon
 
+# #############################################################################   Phase - 2 ##############################################################################
+# ###########################################################      Customizer Serializers Start
+# Customizer Fonts Serializer
+class FontsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizerFonts
+        fields = "__all__"
+    def create(self, validated_data):
+        font = models.CustomizerFonts.objects.create(**validated_data)
+        font.save()
+        return font
+
+# Customizer Emoji Serializer
+class EmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizerEmojis
+        fields = "__all__"
+    def create(self, validated_data):
+        new_emoji = models.CustomizerEmojis.objects.create(emoji = validated_data['emoji'],emoji_price = validated_data['emoji_price'])
+        new_emoji.save()
+        return new_emoji
+
+# Customizer Colors Serializer
+class CustomizerColorsSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizerColors
+        fields = "__all__"
+    def create(self, validated_data):
+        new_color = models.CustomizerColors.objects.create(color_name=validated_data['color_name'],color_code=validated_data['color_code'])
+        new_color.save()
+        return new_color
+
+# Customizer Shapes Seializer
+class CustomizerShapesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizerShapes
+        fields = "__all__"
+    def create(self,validated_data):
+        new_shape = models.CustomizerShapes.objects.create(**validated_data)
+        new_shape.save()
+        return new_shape
+
+# Customizer Background Images Serializer
+class CustomizerBackgroundImagesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizerBackgroundimages
+        fields = "__all__"
+    def create(self, validated_data):
+        new_background_img = models.CustomizerBackgroundimages.objects.create(background_name=validated_data['background_name'],background_image=validated_data['background_image'])
+        new_background_img.save()
+        return new_background_img
+        
+# Customizer Dimensions Serializer
+class CustomizerDimensionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizerDimensions
+        fields = "__all__"
+    def create(self,validated_data):
+        new_dimensions = models.CustomizerDimensions.objects.create(**validated_data)
+        new_dimensions.save()
+        return new_dimensions
+
+# ###########################################################              Customizable Templates                 ########################################################
+class TemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomizableLogoTemplates
+        fields = "__all__"
+    def create(self, validated_data):
+        new_template = models.CustomizableLogoTemplates.objects.create(**validated_data)
+        new_template.save()
+        return new_template
 
 
 
@@ -231,7 +300,8 @@ class CounponsSerializer(serializers.ModelSerializer):
 
 
 
-  
+
+
 
 
 

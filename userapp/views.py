@@ -213,14 +213,19 @@ class AllSubCategories(generics.ListAPIView):
 
 # All SubCategories According to category Along with all Products List
 class AllProductsAccordingToSubCategory(APIView):
-    def post(self,request,cat_id):
-        sub_categories = models.SubCategories.objects.filter(category=cat_id)
-        serializer = user_serializer.AllProductsAccordingToSubCategory(sub_categories, many=True)
+    def post(self, request, cat_id):
+        # Get the subcategories queryset based on the provided category id
+        sub_categories = models.SubCategories.objects.filter(category=cat_id).order_by('-id')
+        # Create the serializer instance with the queryset and specify the context
+        serializer = user_serializer.AllProductsAccordingToSubCategory(
+            sub_categories, many=True, context={'request': request}
+        )
         return Response({
             'status': 200,
             'data': serializer.data,
             'message': 'success'
         })
+
 
 # ################################################################   Address   ########################################################################################
 # Add Address
@@ -306,19 +311,46 @@ class DeleteAddress(APIView):
                 'bool':False,
                 'message':'No Address Found With This ID'
             })
+        
+# Particular address details
+class ParticularAddressDetails(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        address_id = request.data['address_id']
+        if models.Address.objects.filter(id=address_id):
+            address = models.Address.objects.get(pk=address_id)
+            address_serializer = user_serializer.AddressDetailedSerializer(address)
+            return Response({
+                'status':200,
+                'data':address_serializer.data,
+                'message':'Particular Address Details Fetched'
+            })
+        else:
+            return Response({
+                'status':400,
+                'bool':False,
+                'message':'No Address Found With This ID'
+            })
 
 ################################################################### Products #################################################################
 # API To Fetch All Products
 class GetAllProducts(generics.ListAPIView):
-    queryset = models.Product.objects.all()
+    queryset = models.Product.objects.filter(is_visible = True).order_by('-id')
     serializer_class = admin_serializers.ProductComplteDetailsSerializer
     pagination_class = CustomPageNumberPagination
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        for product in queryset:
+            product.calculate_rating()
+        return queryset
 
 # Particular Product Details
 class ParticularProductDetails(APIView):
     def post(self,request):
         product_id = request.data['product_id']
         products = models.Product.objects.filter(id=product_id)
+        for product in products:
+            product.calculate_rating()  # Calculate the rating for each product
         product_serializer = user_serializer.ProductComplteDetailsWithReviews(products,many=True)
         return Response({
             'status':200,
@@ -333,8 +365,9 @@ class UpdateCart(APIView):
         cart = models.Cart.objects.get(user = request.data['user'],product=request.data['product'])
         product = models.Product.objects.get(pk=cart.product.id)
         available_quantity = product.available_quantity
-        if(request.data['quantity']<=available_quantity): 
+        if(request.data['quantity']<=available_quantity):
             cart.quantity = request.data['quantity']
+            cart.size = request.data['size']
             cart.save()
             updated_cart = models.Cart.objects.filter(user = request.data['user'],product=request.data['product'])
             updated_cart_serializer = user_serializer.CartSerializer(updated_cart,many=True)
@@ -412,7 +445,7 @@ class GetParticularCartDetails(APIView):
 # Particular Users Cart
 class UsersCartDetails(APIView):
     def post(self,request):
-        cart_items = models.Cart.objects.filter(user=request.data['user'])
+        cart_items = models.Cart.objects.filter(user=request.data['user']).order_by('-id')
         cart_items_serializer = user_serializer.CartDetailedSerializer(cart_items,many=True)
         return Response({
             'status':200,
@@ -485,13 +518,15 @@ class RemoveItemFromWishlist(APIView):
 # Particular Users Wishlist
 class ParticularUsersWishlist(APIView):
     def post(self,request):
-        user_cart = models.WishList.objects.filter(user=request.data['user_id'])
+        user_cart = models.WishList.objects.filter(user=request.data['user_id']).order_by('-id')
         user_cat_serializer = user_serializer.UserWishListCompleteSerializer(user_cart,many=True)
         return Response({
             'status':200,
             'data':user_cat_serializer.data,
             'message':'User Wishlist Details Fetched'
         })
+    
+
 
 # ###################################################################  Chat With Us ##########################################################################
 # Add New Chat
@@ -513,7 +548,6 @@ class ChatWithus(APIView):
                 'message':'Chat Sent Succesfully'
             })
 
-
 # ###################################################################  Search Product  ##########################################################################
 # Global Search for products which can retrieve products even when the keyword is matched in the description
 class SearchProduct(APIView):
@@ -521,8 +555,10 @@ class SearchProduct(APIView):
         query = request.data.get('query', '') # get the search query from the request data
         if query:
             queryset = models.Product.objects.filter(
-                Q(description__icontains=query) | Q(product_title__icontains=query)
+                Q(description__icontains=query) | Q(product_title__icontains=query),is_visible =True
             )
+            for product in queryset:
+                product.calculate_rating()  # Calculate the rating for each product
             serializer = admin_serializers.ProductComplteDetailsSerializer(queryset, many=True)
             return Response({
                 'status':200,
@@ -532,8 +568,10 @@ class SearchProduct(APIView):
         else:
             query = "!!!----"
             queryset = models.Product.objects.filter(
-                Q(description__icontains=query) | Q(product_title__icontains=query)
+                Q(description__icontains=query) | Q(product_title__icontains=query),is_visible =True
             )
+            for product in queryset:
+                product.calculate_rating()  # Calculate the rating for each product
             serializer = admin_serializers.ProductComplteDetailsSerializer(queryset, many=True)
             return Response({
                 'status':200,
@@ -650,7 +688,7 @@ class OrderDetails(APIView):
 class ParticularUserOrdersHistory(APIView):
     authentication_classes = [CustomAuthentication]
     def post(self,request):
-        particular_users_orders = models.OrderModel.objects.filter(user_id = request.data['user'])
+        particular_users_orders = models.OrderModel.objects.filter(user_id = request.data['user']).order_by('-id')
         users_orders_serializer = user_serializer.OrderDetailsWithOrderItems(particular_users_orders,many=True)
         return Response({
             'status': 200,
@@ -705,9 +743,11 @@ class EmptyUsersCart(APIView):
 
 # Mostly Liked
 class TopSellingProducts(APIView):
-    authentication_classes = [CustomAuthentication]
+    # authentication_classes = [CustomAuthentication]
     def get(self,request):
-        products = models.Product.objects.all().order_by('no_of_orders').reverse()
+        products = models.Product.objects.filter(is_visible =True).order_by('no_of_orders').reverse()
+        for product in products:
+            product.calculate_rating()  # Calculate the rating for each product
         product_serializer = admin_serializers.ProductComplteDetailsSerializer(products,many=True)
         return Response({
             'status':200,
@@ -717,7 +757,7 @@ class TopSellingProducts(APIView):
 # Request For Order Cancellation
 class RequestForOrderCancellation(APIView):
     authentication_classes = [CustomAuthentication]
-    def get(self,request):
+    def post(self,request):
         order=models.OrderModel.objects.get(pk=request.data["order_id"])
         order.order_status="20"
         order.save()
@@ -737,4 +777,216 @@ class RequestForReturn(APIView):
             'status':200,
             'message':"Request for order return"
         })
-        
+
+###########################################################################################################################################################################
+# #############################################################################   Phase - 2   #############################################################################
+# ###########################################################              Customizer Views Start                  ########################################################
+###########################################################################################################################################################################
+# All Fonts API
+class AllCustomizerGET(APIView):
+    def get(self,request):
+        fonts = models.CustomizerFonts.objects.all().order_by('-id')
+        fonts_serializer = admin_serializers.FontsSerializer(fonts,many=True)
+        emojis = models.CustomizerEmojis.objects.all().order_by('-id')
+        emojis_serializer = admin_serializers.EmojiSerializer(emojis,many=True)
+        colors = models.CustomizerColors.objects.all().order_by('-id')
+        colors_serializer = admin_serializers.CustomizerColorsSerializers(colors,many=True)
+        shapes = models.CustomizerShapes.objects.all().order_by('-id')
+        shapes_serializer = admin_serializers.CustomizerShapesSerializer(shapes,many=True)
+        bg_images = models.CustomizerBackgroundimages.objects.all().order_by('-id')
+        bg_imgs_serializer = admin_serializers.CustomizerBackgroundImagesSerializer(bg_images,many=True)
+        dimensions = models.CustomizerDimensions.objects.all().order_by('-id')
+        dimensions_serializer = admin_serializers.CustomizerDimensionsSerializer(dimensions,many=True)
+        return Response({
+            "status":200,
+            "fonts":fonts_serializer.data,
+            "emojis":emojis_serializer.data,
+            "colors":colors_serializer.data,
+            "shapes":shapes_serializer.data,
+            "dimensions":dimensions_serializer.data,
+            "data":bg_imgs_serializer.data,
+            "message":"All Customizer GET Data Fetched"
+        })
+
+# NewCustomizer 
+class NewCustomizer(APIView):
+    def post(self,request):
+        new_customizer_seializer = user_serializer.NewCustomizer(data=request.data)
+        if new_customizer_seializer.is_valid():
+            new_customizer_seializer.save()
+            return Response({
+                "status":200,
+                "data":new_customizer_seializer.data,
+                "message":"New Customizer Saved Successfully"
+            })
+        else:
+            return Response({
+                "status":400,
+                "errors":new_customizer_seializer.errors,
+                "message":"Some Error Occurred"
+            })
+       
+# ###########################################################              Place Order For Customizer                  ########################################################
+# Class Place New Order For Customizer
+class CreateOrdersForCustomizer(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        order_serializer = user_serializer.PlaceOrderForCustomizedProduct(data= request.data)
+        if not order_serializer.is_valid():
+            return Response({
+                'status': 403,
+                'errors': order_serializer.errors,
+                'message': 'Some Error Occurred'
+            })
+        else:
+            order_serializer.save()
+            return Response({
+                'status': 200,
+                'data': order_serializer.data,
+                'message': 'Order Placed Succesfully'
+            })
+
+class OrderDetailsForCustomizer(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self, request):
+        order_id = request.data['order_id']
+        order_details = models.PlaceOrderForCustomizedProducts.objects.get(id=order_id)
+        order_details_serializer = user_serializer.OrderDetailsForCustomizer(order_details)
+        return Response({
+            'status': 200,
+            'data': order_details_serializer.data,
+            'message': 'Order Details Fetched Successfully'
+        })
+
+# Orders History
+class ParticularUserOrdersHistoryForCustomizer(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        particular_users_orders = models.PlaceOrderForCustomizedProducts.objects.filter(user_id = request.data['user_id']).order_by('-id')
+        users_orders_serializer = user_serializer.OrderDetailsForCustomizer(particular_users_orders,many=True)
+        return Response({
+            'status': 200,
+            'data': users_orders_serializer.data,
+            'message': 'Order History Fetched Succesfully'
+        })
+
+# Request For Order Cancellation For Customizers
+class CustomizerOrderRequestForOrderCancellation(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        order=models.PlaceOrderForCustomizedProducts.objects.get(pk=request.data["order_id"])
+        order.order_status="20"
+        order.save()
+        return Response({
+            'status':200,
+            'message': "order cancel request sent"
+        })
+
+# Request for Returning Order
+class CustomizerOrderRequestForReturn(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        orders=models.PlaceOrderForCustomizedProducts.objects.get(pk=request.data['order_id'])
+        orders.order_status="10"
+        orders.save()
+        return Response ({
+            'status':200,
+            'message':"Request for order return"
+        })
+
+# ###########################################################              Customizable Templates                  ########################################################
+# GET All Customizable Templates
+class AllTemplates(APIView):
+    def get(self,request):
+        templates = models.CustomizableLogoTemplates.objects.all().order_by('-id')
+        template_serializer = admin_serializers.TemplateSerializer(templates,many=True)
+        return Response({
+            "status":200,
+            "data":template_serializer.data,
+            "message":"All Templates Fetched Succesfully"
+        })
+
+# POST Place Order For Logo Template
+class CreateOrdersForLogoTemplate(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        order_serializer = user_serializer.PlaceOrderSerializerForLogoTemplate(data= request.data)
+        if order_serializer.is_valid():
+            order_serializer.save()
+            return Response({
+                'status': 200,
+                'data': order_serializer.data,
+                'message': 'Order Placed Succesfully'
+            })
+        else:
+            return Response({
+                'status': 403,
+                'errors': order_serializer.errors,
+                'message': 'Some Error Occurred'
+            })
+
+class OrderDetailsForLogoTemplate(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self, request):
+        order_id = request.data['order_id']
+        order_details = models.PlaceOrderForLogoTemplate.objects.get(id=order_id)
+        order_details_serializer = user_serializer.OrderDetailsForLogo(order_details)
+        return Response({
+            'status': 200,
+            'data': order_details_serializer.data,
+            'message': 'Order Details Fetched Successfully'
+        })
+
+# Orders History
+class ParticularUserOrdersHistoryForLogo(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        particular_users_orders = models.PlaceOrderForLogoTemplate.objects.filter(user_id = request.data['user_id']).order_by('-id')
+        users_orders_serializer = user_serializer.OrderDetailsForLogo(particular_users_orders,many=True)
+        return Response({
+            'status': 200,
+            'data': users_orders_serializer.data,
+            'message': 'Order History Fetched Succesfully'
+        })
+
+# Request For Order Cancellation For Customizers
+class LogoOrderRequestForOrderCancellation(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        order=models.PlaceOrderForLogoTemplate.objects.get(pk=request.data["order_id"])
+        order.order_status="20"
+        order.save()
+        return Response({
+            'status':200,
+            'message': "order cancel request sent"
+        })
+
+# Request for Returning Order
+class LogoOrderRequestForReturn(APIView):
+    authentication_classes = [CustomAuthentication]
+    def post(self,request):
+        orders=models.PlaceOrderForLogoTemplate.objects.get(pk=request.data['order_id'])
+        orders.order_status="10"
+        orders.save()
+        return Response ({
+            'status':200,
+            'message':"Request for order return"
+        })
+
+
+
+
+
+# # Delete Entire Users Wishlist
+# class EmptyUsersWishList(APIView):
+#     def post(self,request):
+#         user_cart = models.WishList.objects.filter(user=request.data['user_id'])
+#         user_cart.delete()
+#         return Response({
+#             'status':200,
+#             'message':'User Cart Deleted Succesfully'
+#         })
+
+
+
+

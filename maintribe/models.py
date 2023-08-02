@@ -114,6 +114,7 @@ class Product(models.Model):
     size_selling_price_5 = models.FloatField(null=True,default=0.0)
     discount_5 = models.FloatField(default=0.0)
     # Product Status
+    is_visible = models.BooleanField(default=True)
     stock_status = models.CharField(max_length=500,default="Available")
     available_quantity = models.IntegerField(default=1)
     no_of_wishlists = models.IntegerField(default=0)
@@ -211,12 +212,6 @@ class Banners(models.Model):
     category = models.ForeignKey(Categories,on_delete=models.CASCADE)
     sub_category = models.ForeignKey(SubCategories,on_delete=models.CASCADE)
 
-
-
-
-
-
-
 #############################################################   End User Models   #####################################################################
 class UserBaseModel(models.Model):
     id = models.CharField(default ="", max_length=500)
@@ -238,6 +233,7 @@ class Users(UserBaseModel):
     device_id = models.CharField(max_length=500)
     firebase_id = models.CharField(max_length=250,default="aaa")
     is_verified = models.BooleanField(default=False)
+    is_prime = models.BooleanField(default=False)
 
 # Address 
 class Address(models.Model):
@@ -314,6 +310,10 @@ class Reviews(models.Model):
     updated_date = models.DateField(auto_now=True)
     updated_time = models.TimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.product.calculate_rating()
+
 # Order Model
 class Order(models.Model):
     user = models.ForeignKey(Users,on_delete=models.CASCADE)
@@ -363,6 +363,105 @@ class OrderItems(models.Model):
     order = models.ForeignKey(OrderModel,on_delete=models.CASCADE,related_name="order_items")
     size = models.IntegerField(default=1)
     color = models.CharField(max_length=200)
+
+# #############################################################################   Phase - 2 ##############################################################################
+# ###########################################################      Customizer Models Start
+# Fonts
+class CustomizerFonts(models.Model):
+    font_name = models.CharField(max_length=250)
+    font_file = models.FileField(blank=True,upload_to="customizer_fonts/")
+
+# Emojis
+class CustomizerEmojis(models.Model):
+    emoji = models.ImageField(blank=True,upload_to="customizer_emojis")
+    emoji_price = models.FloatField(default=0.0)
+
+# Colors
+class CustomizerColors(models.Model):
+    color_name = models.CharField(max_length=250)
+    color_code = models.CharField(max_length=250)
+
+# Shapes
+class CustomizerShapes(models.Model):
+    shape_name = models.CharField(max_length=250)
+    shape_image = models.ImageField(blank=True,upload_to="customizer_shapes/")
+    shape_price = models.FloatField(default=0.0)
+
+# Background Images
+class CustomizerBackgroundimages(models.Model):
+    background_name = models.CharField(max_length=400)
+    background_image = models.ImageField(blank=True,upload_to="customizer_background_images/")
+
+# Dimensions
+class CustomizerDimensions(models.Model):
+    height = models.FloatField(default=0.0)
+    length = models.FloatField(default=0.0)
+    price = models.FloatField(default=0.0)
+
+# New Customized Product
+class CustomizedProduct(models.Model):
+    user = models.ForeignKey(Users,on_delete=models.CASCADE)
+    font = models.ForeignKey(CustomizerFonts,on_delete=models.CASCADE)
+    color = models.ForeignKey(CustomizerColors,on_delete=models.CASCADE)
+    text = models.CharField(max_length=1000)
+    image = models.FileField(upload_to="user_customized_images")
+    size = models.CharField(max_length=1000)
+    quantity = models.IntegerField(default=1)
+    price = models.FloatField(default=0.0)
+    is_controler = models.BooleanField(default=True)
+    is_special_delivery = models.BooleanField(default=False)
+    special_delivery_charges = models.IntegerField(default=0)
+    description_by_user = models.TextField(default="")
+
+# Place Order For Customized Products
+class PlaceOrderForCustomizedProducts(models.Model):
+    customized_product = models.ForeignKey(CustomizedProduct,on_delete=models.CASCADE)
+    address = models.ForeignKey(Address,on_delete=models.CASCADE)
+    user = models.ForeignKey(Users,on_delete=models.CASCADE)
+    total_amount = models.IntegerField()
+    payment_method = models.CharField(max_length=200)
+    payment_done = models.BooleanField(default=False)
+    quantity = models.IntegerField(default=1)
+    order_status = models.CharField(default="1",max_length=200)
+    is_paid = models.BooleanField(default=False)
+    is_order_placed = models.BooleanField(default=True)
+    is_order_confirmed = models.BooleanField(default=False)
+    is_order_shipped = models.BooleanField(default=False)
+    is_order_on_the_way = models.BooleanField(default=False)
+    is_delivered = models.BooleanField(default=False)
+    order_placedAt = models.DateTimeField(auto_now=True)
+    order_confirmedAt = models.CharField(default="",max_length=200)
+    order_shippedAt = models.CharField(default="",max_length=200)
+    order_on_the_wayAt = models.CharField(default="",max_length=200)
+    order_deliveredAt = models.CharField(default="",max_length=200)
+    updatedAt = models.DateTimeField(auto_now_add=True)
+    transaction_id = models.CharField(max_length=200,blank=True)
+
+
+############################################################   Template Models Start
+# Templates
+class CustomizableLogoTemplates(models.Model):
+   title = models.CharField(max_length=300)
+   template_image = models.ImageField(upload_to="template_images/",blank=True)
+   max_characters = models.IntegerField(default=0)
+
+# Place Order For Template Products
+class PlaceOrderForLogoTemplate(models.Model):
+    template_product = models.ForeignKey(CustomizableLogoTemplates,on_delete=models.CASCADE)
+    user = models.ForeignKey(Users,on_delete=models.CASCADE)
+    text = models.TextField()
+    email = models.CharField(max_length=500)
+    
+
+
+
+
+
+
+
+
+
+
 
 
 
